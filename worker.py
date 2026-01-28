@@ -2,8 +2,8 @@
 import time
 import sys
 from sqlalchemy.orm import Session
-from database import SessionLocal
-import models
+from app.database import SessionLocal
+from app import models
 
 # تابعی برای گرفتن ارتباط دیتابیس (مثل main.py)
 def get_db():

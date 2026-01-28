@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 
 # ایمپورت کردن فایل‌هایی که خودمان ساختیم
-import models, schemas, security, database
+from app import models, schemas, security, database
 
 # ساخت اپلیکیشن اصلی
 app = FastAPI(

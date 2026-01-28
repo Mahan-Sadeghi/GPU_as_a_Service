@@ -10,7 +10,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # مدت اعتبار توکن
 
 # تنظیمات مربوط به هش کردن پسورد
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # تابع برای چک کردن اینکه آیا پسورد وارد شده با هش ذخیره شده یکی هست یا نه
 def verify_password(plain_password, hashed_password):

@@ -1,50 +1,45 @@
-# schemas.py
 from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
+from typing import List, Optional
 
-# --- مدل‌های مربوط به توکن (برای لاگین) ---
+# --- مدل‌های کاربر (User) ---
+class UserBase(BaseModel):
+    username: str
+
+class UserCreate(UserBase):
+    password: str
+
+class UserResponse(UserBase):
+    id: int
+    is_admin: bool  # <--- فیلد مهم جدید اینجاست
+    # role و quota_limit را حذف کردیم چون در دیتابیس نیستند
+
+    class Config:
+        orm_mode = True
+
+# --- مدل‌های تسک (Job) ---
+class JobBase(BaseModel):
+    gpu_type: str
+    gpu_count: int
+    estimated_duration: int
+    command: str
+    data_address: Optional[str] = "/data/default"
+    sensitivity: Optional[str] = "normal"
+
+class JobCreate(JobBase):
+    pass
+
+class JobResponse(JobBase):
+    id: int
+    status: str
+    owner_id: int
+
+    class Config:
+        orm_mode = True
+
+# --- مدل توکن (برای لاگین) ---
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
     username: Optional[str] = None
-
-# --- مدل‌های مربوط به کاربر (User) ---
-
-# مدلی که کاربر موقع ثبت‌نام می‌فرستد
-class UserCreate(BaseModel):
-    username: str
-    password: str
-
-# مدلی که ما به کاربر برمی‌گردانیم (پسورد را نباید برگردانیم!)
-class UserResponse(BaseModel):
-    id: int
-    username: str
-    role: str
-    quota_limit: float
-
-    class Config:
-        from_attributes = True  # برای سازگاری با SQLAlchemy
-
-# --- مدل‌های مربوط به تسک‌ها (Job) ---
-
-# اطلاعاتی که کاربر برای ثبت یک تسک می‌فرستد
-class JobCreate(BaseModel):
-    gpu_type: str          # نوع گرافیک درخواستی
-    gpu_count: int         # تعداد گرافیک
-    estimated_duration: int # زمان تخمینی (ساعت)
-    command: str           # دستور اجرا
-    data_address: str      # آدرس فایل‌ها
-    sensitivity: Optional[str] = "normal"
-
-# اطلاعاتی که ما درباره تسک به کاربر نشان می‌دهیم
-class JobResponse(JobCreate):
-    id: int
-    owner_id: int
-    status: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True

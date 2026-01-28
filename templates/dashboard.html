@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد مدیریت GPU</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: Tahoma, sans-serif; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="#">سامانه پردازش ابری</a>
+        <div class="d-flex align-items-center">
+            <span id="userInfo" class="text-light me-3 small"></span>
+            <button class="btn btn-outline-danger btn-sm" onclick="logout()">خروج</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>📋 لیست درخواست‌های پردازشی</h3>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newJobModal">
+            + ثبت درخواست جدید
+        </button>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>شناسه</th>
+                            <th>کاربر</th>
+                            <th>مشخصات</th>
+                            <th>دستور</th>
+                            <th>وضعیت</th>
+                            <th>عملیات</th> </tr>
+                    </thead>
+                    <tbody id="jobsTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <p id="loadingText" class="text-center text-muted mt-3">در حال دریافت اطلاعات...</p>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="newJobModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">ثبت درخواست جدید</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createJobForm">
+                    <div class="mb-3">
+                        <label class="form-label">نوع کارت گرافیک</label>
+                        <select class="form-select" id="gpuType">
+                            <option value="T4">NVIDIA T4</option>
+                            <option value="V100">NVIDIA V100</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">تعداد</label>
+                            <input type="number" class="form-control" id="gpuCount" value="1" min="1" max="4">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">مدت (ثانیه)</label>
+                            <input type="number" class="form-control" id="duration" value="10" min="5">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">دستور (Command)</label>
+                        <input type="text" class="form-control" id="command" placeholder="python train.py" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">ارسال</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const token = localStorage.getItem('token');
+    let isAdmin = false; // پیش‌فرض: کاربر معمولی
+    let currentUsername = "";
+
+    if (!token) window.location.href = "/";
+
+    // 1. اول چک می‌کنیم کاربر کیست (ادمین است یا نه؟)
+    async function checkUserRole() {
+        try {
+            const response = await fetch('/users/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const user = await response.json();
+                isAdmin = user.is_admin; // این فیلد را از بک‌اند می‌خوانیم
+                currentUsername = user.username;
+                
+                // نمایش نام و نقش در هدر
+                const roleText = isAdmin ? "(مدیر سیستم)" : "(کاربر عادی)";
+                document.getElementById('userInfo').innerText = `${currentUsername} ${roleText}`;
+                
+                loadJobs(); // بعد از اینکه فهمیدیم کیه، لیست را لود می‌کنیم
+            } else {
+                logout();
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // 2. دریافت لیست کارها
+    async function loadJobs() {
+        const tbody = document.getElementById('jobsTableBody');
+        const loadingText = document.getElementById('loadingText');
+        
+        try {
+            const response = await fetch('/jobs/', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const jobs = await response.json();
+            
+            tbody.innerHTML = '';
+            loadingText.style.display = 'none';
+
+            jobs.forEach(job => {
+                // منطق دکمه تایید: فقط اگر ادمین بود و وضعیت PENDING بود
+                let actionButton = '-';
+                if (isAdmin && job.status === 'PENDING') {
+                    actionButton = `
+                        <button class="btn btn-sm btn-outline-success" onclick="approveJob(${job.id})">
+                            ✅ تایید
+                        </button>
+                    `;
+                }
+
+                const row = `
+                    <tr>
+                        <td>${job.id}</td>
+                        <td>${job.owner_id}</td>
+                        <td>${job.gpu_count}x ${job.gpu_type} (${job.estimated_duration}s)</td>
+                        <td class="text-monospace small" dir="ltr">${job.command}</td>
+                        <td>${getStatusBadge(job.status)}</td>
+                        <td>${actionButton}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // 3. تابع تایید تسک (مخصوص ادمین)
+    async function approveJob(jobId) {
+        if (!confirm("آیا مطمئن هستید که می‌خواهید این درخواست را تایید کنید؟")) return;
+
+        try {
+            // نکته: اینجا approved باید حروف بزرگ باشد
+            const response = await fetch(`/jobs/${jobId}?status_update=APPROVED`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                loadJobs(); // رفرش جدول
+            } else {
+                alert("خطا: شما دسترسی لازم را ندارید یا مشکلی پیش آمده.");
+            }
+        } catch (error) {
+            alert("خطای شبکه");
+        }
+    }
+
+    // 4. سایر توابع کمکی
+    function getStatusBadge(status) {
+        if (status === 'PENDING') return '<span class="badge bg-warning text-dark">در انتظار</span>';
+        if (status === 'APPROVED') return '<span class="badge bg-info">تایید شده</span>';
+        if (status === 'RUNNING') return '<span class="badge bg-primary spinner-grow-sm">در حال اجرا</span>';
+        if (status === 'COMPLETED') return '<span class="badge bg-success">تکمیل</span>';
+        if (status === 'FAILED') return '<span class="badge bg-danger">رد شده</span>';
+        return status;
+    }
+
+    document.getElementById('createJobForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        // همان کد قبلی ارسال درخواست ...
+        const data = {
+            gpu_type: document.getElementById('gpuType').value,
+            gpu_count: parseInt(document.getElementById('gpuCount').value),
+            estimated_duration: parseInt(document.getElementById('duration').value),
+            command: document.getElementById('command').value,
+            data_address: "/data/default",
+            sensitivity: "normal"
+        };
+        const res = await fetch('/jobs/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('newJobModal')).hide();
+            loadJobs();
+        }
+    });
+
+    function logout() {
+        localStorage.removeItem('token');
+        window.location.href = "/";
+    }
+
+    // شروع برنامه
+    checkUserRole();
+    setInterval(loadJobs, 5000); // آپدیت خودکار
+
+</script>
+
+</body>
+</html>

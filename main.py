@@ -1,11 +1,13 @@
-# main.py
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
-# ایمپورت کردن فایل‌هایی که خودمان ساختیم
+# ایمپورت‌های ماژول‌های خودمان (که بردیم توی پوشه app)
 from app import models, schemas, security, database
+from app.database import SessionLocal, engine
 
 # ساخت اپلیکیشن اصلی
 app = FastAPI(
@@ -13,6 +15,7 @@ app = FastAPI(
     description="سامانه مدیریت و تخصیص منابع پردازشی (پروژه پایانی)",
     version="0.1.0"
 )
+templates = Jinja2Templates(directory="templates")
 
 # ساخت جداول دیتابیس (اگر وجود نداشته باشند)
 models.Base.metadata.create_all(bind=database.engine)
@@ -55,24 +58,28 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 # --- اندپوینت‌های احراز هویت (Auth Routes) ---
 
 @app.post("/register", response_model=schemas.UserResponse)
-def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    # چک کنیم که یوزرنیم تکراری نباشد
+def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    # 1. چک کردن تکراری نبودن
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="این نام کاربری قبلا ثبت شده است")
-    
-    # ساخت کاربر جدید
-    hashed_password = security.get_password_hash(user.password)
-    # اولین کاربر را به عنوان Admin ثبت می‌کنیم (برای تست راحت‌تر)
-    # اگر دیتابیس خالی بود -> ادمین، وگرنه -> یوزر معمولی
-    is_first_user = db.query(models.User).count() == 0
-    role = "admin" if is_first_user else "user"
-    
+        raise HTTPException(status_code=400, detail="Username already registered")
+
+    # 2. هش کردن پسورد
+    hashed_pass = security.get_password_hash(user.password)
+
+    # 3. --- پارتی‌بازی برای ادمین ---
+    # اگر نام کاربری "admin" بود، دسترسی مدیریت بگیرد
+    is_admin_role = False
+    if user.username == "admin":
+        is_admin_role = True
+
+    # 4. ساخت کاربر در دیتابیس
     new_user = models.User(
         username=user.username, 
-        hashed_password=hashed_password,
-        role=role
+        hashed_password=hashed_pass,
+        is_admin=is_admin_role  # <--- این خط جدید است
     )
+    
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -94,8 +101,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     # ساخت توکن
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
-        data={"sub": user.username, "role": user.role},
-        expires_delta=access_token_expires
+        data={"sub": user.username, "is_admin": user.is_admin}
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -180,3 +186,12 @@ def update_job_status(
     db.refresh(job)
     return job
 
+# ... کدهای قبلی ...
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def view_dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})

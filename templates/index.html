@@ -5,131 +5,156 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ورود به سامانه GPU</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100vh; display: flex; align-items: center; justify-content: center; font-family: Tahoma, sans-serif; }
-        .card { width: 400px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .nav-tabs .nav-link { color: #495057; }
-        .nav-tabs .nav-link.active { font-weight: bold; color: #764ba2; }
-    </style>
+    <link href="/static/styles.css" rel="stylesheet">
 </head>
 <body>
-
-<div class="card bg-white p-4">
-    <h3 class="text-center mb-4 text-primary">سامانه پردازش GPU</h3>
+    <canvas id="bgCanvas"></canvas>
     
-    <ul class="nav nav-tabs mb-3" id="authTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button">ورود</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button">ثبت‌نام</button>
-        </li>
-    </ul>
+    <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+        <div class="card p-4" style="width: 400px;">
+            <h3 class="text-center mb-4" style="color: var(--neon-blue);">سامانه پردازش GPU</h3>
+            
+            <ul class="nav nav-tabs mb-3" id="authTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button">ورود</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button">ثبت‌نام</button>
+                </li>
+            </ul>
 
-    <div class="tab-content" id="authTabContent">
-        <div class="tab-pane fade show active" id="login" role="tabpanel">
-            <form id="loginForm">
-                <div class="mb-3">
-                    <label class="form-label">نام کاربری</label>
-                    <input type="text" class="form-control" id="loginUser" required>
+            <div class="tab-content" id="authTabContent">
+                <div class="tab-pane fade show active" id="login" role="tabpanel">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label">نام کاربری</label>
+                            <input type="text" class="form-control" id="loginUser" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">رمز عبور</label>
+                            <input type="password" class="form-control" id="loginPass" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">ورود به سیستم</button>
+                    </form>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">رمز عبور</label>
-                    <input type="password" class="form-control" id="loginPass" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">ورود به سیستم</button>
-            </form>
-        </div>
 
-        <div class="tab-pane fade" id="register" role="tabpanel">
-            <form id="registerForm">
-                <div class="mb-3">
-                    <label class="form-label">نام کاربری جدید</label>
-                    <input type="text" class="form-control" id="regUser" required>
+                <div class="tab-pane fade" id="register" role="tabpanel">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label class="form-label">نام کاربری جدید</label>
+                            <input type="text" class="form-control" id="regUser" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">رمز عبور</label>
+                            <input type="password" class="form-control" id="regPassword" required onkeyup="checkPasswordStrength()">
+                            
+                            <div class="progress mt-2" style="height: 5px;">
+                                <div id="passwordStrengthBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small id="passwordStrengthText" class="text-muted d-block mt-1" style="font-size: 0.8rem;">رمز را وارد کنید...</small>
+
+                            <ul class="list-unstyled mt-2 small text-muted" style="font-size: 0.85rem;">
+                                <li id="rule-length"><span class="me-2">🔴</span>حداقل ۸ کاراکتر</li>
+                                <li id="rule-upper"><span class="me-2">🔴</span>یک حرف بزرگ</li>
+                                <li id="rule-lower"><span class="me-2">🔴</span>یک حرف کوچک</li>
+                                <li id="rule-number"><span class="me-2">🔴</span>یک عدد</li>
+                                <li id="rule-special"><span class="me-2">🔴</span>کاراکتر خاص (!@#)</li>
+                            </ul>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">ایجاد حساب کاربری</button>
+                    </form>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">رمز عبور</label>
-                    <input type="password" class="form-control" id="regPass" required>
-                </div>
-                <button type="submit" class="btn btn-success w-100">ایجاد حساب کاربری</button>
-            </form>
+            </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/particles.js"></script>
     
-    <div id="alertBox" class="alert mt-3 d-none"></div>
-</div>
+    <script>
+        // اسکریپت لاگین
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+            
+            const formData = new URLSearchParams();
+            formData.append('username', user);
+            formData.append('password', pass);
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+            try {
+                const response = await fetch('/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
 
-<script>
-    // --- 1. لاجیک ثبت‌نام (Register) ---
-    document.getElementById('registerForm').addEventListener('submit', async (e) => {
-        e.preventDefault(); // جلوگیری از ریلود شدن صفحه
-        const user = document.getElementById('regUser').value;
-        const pass = document.getElementById('regPass').value;
-        const alertBox = document.getElementById('alertBox');
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    window.location.href = "/dashboard";
+                } else {
+                    alert('نام کاربری یا رمز عبور اشتباه است.');
+                }
+            } catch (error) { alert('خطای سرور'); }
+        });
 
-        try {
-            const response = await fetch('/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: user, password: pass })
-            });
+        // اسکریپت ثبت‌نام
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = document.getElementById('regUser').value;
+            const pass = document.getElementById('regPassword').value;
 
-            if (response.ok) {
-                showAlert('ثبت‌نام موفقیت‌آمیز بود! حالا وارد شوید.', 'success');
-                // سوئیچ خودکار به تب لاگین
-                document.getElementById('login-tab').click();
-            } else {
-                const data = await response.json();
-                showAlert('خطا: ' + data.detail, 'danger');
-            }
-        } catch (error) {
-            showAlert('خطای شبکه!', 'danger');
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                if (response.ok) {
+                    alert('ثبت‌نام موفق! حالا وارد شوید.');
+                    document.getElementById('login-tab').click();
+                } else {
+                    const err = await response.json();
+                    alert('خطا: ' + err.detail);
+                }
+            } catch (error) { alert('خطای سرور'); }
+        });
+
+        // اسکریپت سنجش قدرت پسورد
+        function checkPasswordStrength() {
+            const password = document.getElementById('regPassword').value;
+            const rules = {
+                length: password.length >= 8,
+                upper: /[A-Z]/.test(password),
+                lower: /[a-z]/.test(password),
+                number: /[0-9]/.test(password),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+            };
+            
+            updateRule('rule-length', rules.length);
+            updateRule('rule-upper', rules.upper);
+            updateRule('rule-lower', rules.lower);
+            updateRule('rule-number', rules.number);
+            updateRule('rule-special', rules.special);
+
+            const strength = Object.values(rules).filter(Boolean).length;
+            const bar = document.getElementById('passwordStrengthBar');
+            const text = document.getElementById('passwordStrengthText');
+            const percentage = (strength / 5) * 100;
+            
+            bar.style.width = percentage + '%';
+            if (strength <= 2) { bar.className = 'progress-bar bg-danger'; text.innerText = 'خیلی ضعیف'; text.className = 'text-danger d-block mt-1'; }
+            else if (strength <= 4) { bar.className = 'progress-bar bg-warning'; text.innerText = 'متوسط'; text.className = 'text-warning d-block mt-1'; }
+            else { bar.className = 'progress-bar bg-success'; text.innerText = 'عالی'; text.className = 'text-success d-block mt-1'; }
         }
-    });
 
-    // --- 2. لاجیک ورود (Login) ---
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const user = document.getElementById('loginUser').value;
-        const pass = document.getElementById('loginPass').value;
-
-        // فرمت ارسال داده برای OAuth2 باید URLSearchParams باشد (نه JSON)
-        const formData = new URLSearchParams();
-        formData.append('username', user);
-        formData.append('password', pass);
-
-        try {
-            const response = await fetch('/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                // ذخیره توکن در مرورگر
-                localStorage.setItem('token', data.access_token);
-                showAlert('ورود موفق! در حال انتقال...', 'success');
-                
-                // انتقال به صفحه داشبورد
-                setTimeout(() => { window.location.href = "/dashboard"; }, 1000);
-            } else {
-                showAlert('نام کاربری یا رمز عبور اشتباه است.', 'danger');
-            }
-        } catch (error) {
-            showAlert('خطای ارتباط با سرور', 'danger');
+        function updateRule(id, passed) {
+            const el = document.getElementById(id);
+            if (passed) { el.innerHTML = '<span class="me-2">🟢</span>' + el.innerText.substring(2); el.classList.add('text-success'); }
+            else { el.innerHTML = '<span class="me-2">🔴</span>' + el.innerText.substring(2); el.classList.remove('text-success'); }
         }
-    });
-
-    function showAlert(msg, type) {
-        const box = document.getElementById('alertBox');
-        box.className = `alert alert-${type} mt-3`;
-        box.innerText = msg;
-        box.classList.remove('d-none');
-    }
-</script>
-
+    </script>
 </body>
 </html>

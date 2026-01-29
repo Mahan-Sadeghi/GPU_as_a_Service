@@ -1,62 +1,49 @@
-# worker.py
 import time
 import sys
-from sqlalchemy.orm import Session
-from app.database import SessionLocal
-from app import models
+import os
 
-# تابعی برای گرفتن ارتباط دیتابیس (مثل main.py)
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# --- فیکس کردن مسیر برای پیدا کردن پوشه app ---
+sys.path.append(os.getcwd())
 
-def run_simulator():
-    print("🤖 شبیه‌ساز GPU روشن شد و آماده کار است...")
+from app import models, database
+
+def process_jobs():
+    print("👷 Worker started! Waiting for APPROVED jobs...")
     
-    # حلقه بی‌نهایت برای چک کردن مداوم دیتابیس
     while True:
-        # ساخت یک نشست (Session) جدید برای هر دور بررسی
-        db: Session = SessionLocal()
-        
+        db = database.SessionLocal()
         try:
-            # ۱. پیدا کردن تسکی که وضعیتش APPROVED باشد (یعنی ادمین تایید کرده)
-            # ما اولویت را به قدیمی‌ترین تسک می‌دهیم (First Come First Served)
+            # فقط کارهایی که ادمین تایید کرده (APPROVED) رو پیدا کن
+            # نکته: ورکر به کارهای PENDING (زرد) کاری نداره!
             job = db.query(models.Job).filter(models.Job.status == "APPROVED").first()
-            
+
             if job:
-                print(f"✅ تسک جدید پیدا شد: ID={job.id} | {job.gpu_type} | مدت: {job.estimated_duration} ثانیه")
+                print(f"⚡ Found job {job.id}: {job.command}")
                 
-                # ۲. تغییر وضعیت به RUNNING
+                # 1. تغییر وضعیت به آبی (در حال اجرا)
                 job.status = "RUNNING"
                 db.commit()
-                print(f"⏳ تسک {job.id} در حال اجراست...")
+                print("   --> Status: RUNNING (Blue)")
                 
-                # ۳. شبیه‌سازی اجرا (Sleep)
-                # نکته: ما اینجا ثانیه را به جای ساعت در نظر می‌گیریم تا دمو سریع باشد
-                time.sleep(job.estimated_duration)
-                
-                # ۴. تغییر وضعیت به COMPLETED
+                # شبیه‌سازی زمان اجرا
+                duration = job.estimated_duration or 10
+                for i in range(duration):
+                    time.sleep(1)
+                    print(f"   ⏳ Processing... {i+1}/{duration}")
+
+                # 2. تغییر وضعیت به سبز (تمام شده)
                 job.status = "COMPLETED"
                 db.commit()
-                print(f"🎉 تسک {job.id} با موفقیت تمام شد.\n")
-                
+                print("   --> Status: COMPLETED (Green) ✅\n")
+            
             else:
-                # اگر کاری نبود، ۵ ثانیه صبر کن و دوباره چک کن
-                # print("💤 کاری برای انجام نیست...")
-                time.sleep(5)
+                # استراحت کوتاه وقتی کاری نیست
+                time.sleep(2)
                 
         except Exception as e:
-            print(f"❌ خطا در اجرا: {e}")
-            
+            print(f"❌ Error: {e}")
         finally:
-            # حتما دیتابیس را ببندیم
             db.close()
 
 if __name__ == "__main__":
-    try:
-        run_simulator()
-    except KeyboardInterrupt:
-        print("\n🛑 شبیه‌ساز خاموش شد.")
+    process_jobs()

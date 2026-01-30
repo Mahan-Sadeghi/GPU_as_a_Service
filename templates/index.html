@@ -5,16 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ورود به سامانه GPU</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="/static/styles.css" rel="stylesheet">
+    <style>
+        .password-wrapper { position: relative; }
+        
+        .password-toggle-btn {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            z-index: 10;
+            padding: 0;
+            font-size: 1.2rem;
+            transition: color 0.3s;
+            display: flex;             /* برای تراز کردن آیکون داخل دکمه */
+            align-items: center;
+        }
+
+        .password-toggle-btn:hover { color: #38bdf8; }
+        .form-control-password { padding-left: 35px !important; }
+    </style>
 </head>
 <body>
     <canvas id="bgCanvas"></canvas>
     
     <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
         <div class="card p-4" style="width: 400px;">
-            <h3 class="text-center mb-4" style="color: var(--neon-blue);">سامانه پردازش GPU</h3>
+            <h3 class="text-center mb-4 d-flex justify-content-center align-items-center" style="color: var(--neon-blue);">
+                <i class="bi bi-cloud-haze2 fs-2 ms-2"></i> <span>سامانه پردازش ابری</span>
+            </h3>
             
-            <ul class="nav nav-tabs mb-3" id="authTab" role="tablist">
+            <ul class="nav nav-tabs justify-content-center mb-3" id="authTab" role="tablist" style="border-bottom: 1px solid #334155;">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button">ورود</button>
                 </li>
@@ -32,9 +58,14 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">رمز عبور</label>
-                            <input type="password" class="form-control" id="loginPass" required>
+                            <div class="password-wrapper">
+                                <input type="password" class="form-control form-control-password" id="loginPass" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePass('loginPass', this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">ورود به سیستم</button>
+                        <button type="submit" class="btn btn-primary w-100 mt-2 fw-bold">ورود به سیستم</button>
                     </form>
                 </div>
 
@@ -46,22 +77,37 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">رمز عبور</label>
-                            <input type="password" class="form-control" id="regPassword" required onkeyup="checkPasswordStrength()">
+                            <div class="password-wrapper">
+                                <input type="password" class="form-control form-control-password" id="regPassword" required onkeyup="checkPasswordStrength()">
+                                <button type="button" class="password-toggle-btn" onclick="togglePass('regPassword', this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                             
-                            <div class="progress mt-2" style="height: 5px;">
+                            <div class="progress mt-2" style="height: 5px; background-color: #334155;">
                                 <div id="passwordStrengthBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
                             </div>
-                            <small id="passwordStrengthText" class="text-muted d-block mt-1" style="font-size: 0.8rem;">رمز را وارد کنید...</small>
+                            <small id="passwordStrengthText" class="d-block mt-1" style="font-size: 0.8rem; color: #cbd5e1;">رمز را وارد کنید...</small>
 
-                            <ul class="list-unstyled mt-2 small text-muted" style="font-size: 0.85rem;">
-                                <li id="rule-length"><span class="me-2">🔴</span>حداقل ۸ کاراکتر</li>
-                                <li id="rule-upper"><span class="me-2">🔴</span>یک حرف بزرگ</li>
-                                <li id="rule-lower"><span class="me-2">🔴</span>یک حرف کوچک</li>
-                                <li id="rule-number"><span class="me-2">🔴</span>یک عدد</li>
-                                <li id="rule-special"><span class="me-2">🔴</span>کاراکتر خاص (!@#)</li>
+                            <ul class="list-unstyled mt-2 small" style="font-size: 0.85rem; color: #cbd5e1;">
+                                <li id="rule-length" class="d-flex align-items-center mb-1" style="opacity: 0.8;">
+                                    <i class="bi bi-circle ms-2" style="font-size: 0.6rem;"></i>حداقل ۸ کاراکتر
+                                </li>
+                                <li id="rule-upper" class="d-flex align-items-center mb-1" style="opacity: 0.8;">
+                                    <i class="bi bi-circle ms-2" style="font-size: 0.6rem;"></i>یک حرف بزرگ
+                                </li>
+                                <li id="rule-lower" class="d-flex align-items-center mb-1" style="opacity: 0.8;">
+                                    <i class="bi bi-circle ms-2" style="font-size: 0.6rem;"></i>یک حرف کوچک
+                                </li>
+                                <li id="rule-number" class="d-flex align-items-center mb-1" style="opacity: 0.8;">
+                                    <i class="bi bi-circle ms-2" style="font-size: 0.6rem;"></i>یک عدد
+                                </li>
+                                <li id="rule-special" class="d-flex align-items-center mb-1" style="opacity: 0.8;">
+                                    <i class="bi bi-circle ms-2" style="font-size: 0.6rem;"></i>کاراکتر خاص (!@#)
+                                </li>
                             </ul>
                         </div>
-                        <button type="submit" class="btn btn-success w-100">ایجاد حساب کاربری</button>
+                        <button type="submit" class="btn btn-success w-100 mt-2 fw-bold">ایجاد حساب کاربری</button>
                     </form>
                 </div>
             </div>
@@ -72,57 +118,60 @@
     <script src="/static/particles.js"></script>
     
     <script>
-        // اسکریپت لاگین
+        function togglePass(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector("i");
+            
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+                btn.style.color = "#38bdf8";
+            } else {
+                input.type = "password";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+                btn.style.color = "#94a3b8";
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const user = document.getElementById('loginUser').value;
-            const pass = document.getElementById('loginPass').value;
-            
             const formData = new URLSearchParams();
-            formData.append('username', user);
-            formData.append('password', pass);
+            formData.append('username', document.getElementById('loginUser').value);
+            formData.append('password', document.getElementById('loginPass').value);
 
             try {
                 const response = await fetch('/token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData
+                    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData
                 });
-
                 if (response.ok) {
                     const data = await response.json();
                     localStorage.setItem('access_token', data.access_token);
                     window.location.href = "/dashboard";
-                } else {
-                    alert('نام کاربری یا رمز عبور اشتباه است.');
-                }
+                } else alert('نام کاربری یا رمز عبور اشتباه است.');
             } catch (error) { alert('خطای سرور'); }
         });
 
-        // اسکریپت ثبت‌نام
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const user = document.getElementById('regUser').value;
-            const pass = document.getElementById('regPassword').value;
-
             try {
                 const response = await fetch('/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: document.getElementById('regUser').value, password: document.getElementById('regPassword').value })
                 });
-
-                if (response.ok) {
-                    alert('ثبت‌نام موفق! حالا وارد شوید.');
-                    document.getElementById('login-tab').click();
-                } else {
-                    const err = await response.json();
-                    alert('خطا: ' + err.detail);
+                
+                if (response.ok) { 
+                    alert('ثبت‌نام موفق! وارد شوید.'); 
+                    document.getElementById('registerForm').reset();
+                    document.getElementById('passwordStrengthBar').style.width = '0%';
+                    document.getElementById('passwordStrengthText').innerText = 'رمز را وارد کنید...';
+                    document.getElementById('login-tab').click(); 
                 }
+                else { const err = await response.json(); alert('خطا: ' + err.detail); }
             } catch (error) { alert('خطای سرور'); }
         });
 
-        // اسکریپت سنجش قدرت پسورد
         function checkPasswordStrength() {
             const password = document.getElementById('regPassword').value;
             const rules = {
@@ -145,15 +194,31 @@
             const percentage = (strength / 5) * 100;
             
             bar.style.width = percentage + '%';
-            if (strength <= 2) { bar.className = 'progress-bar bg-danger'; text.innerText = 'خیلی ضعیف'; text.className = 'text-danger d-block mt-1'; }
-            else if (strength <= 4) { bar.className = 'progress-bar bg-warning'; text.innerText = 'متوسط'; text.className = 'text-warning d-block mt-1'; }
-            else { bar.className = 'progress-bar bg-success'; text.innerText = 'عالی'; text.className = 'text-success d-block mt-1'; }
+            
+            if (password.length === 0) {
+                bar.style.width = '0%'; text.innerText = 'رمز را وارد کنید...'; text.style.color = '#cbd5e1'; text.className = 'd-block mt-1';
+            } else if (strength <= 2) { 
+                bar.className = 'progress-bar bg-danger'; text.innerText = 'خیلی ضعیف'; text.className = 'text-danger d-block mt-1'; 
+            } else if (strength <= 4) { 
+                bar.className = 'progress-bar bg-warning'; text.innerText = 'متوسط'; text.className = 'text-warning d-block mt-1'; 
+            } else { 
+                bar.className = 'progress-bar bg-success'; text.innerText = 'عالی'; text.className = 'text-success d-block mt-1'; 
+            }
         }
 
         function updateRule(id, passed) {
             const el = document.getElementById(id);
-            if (passed) { el.innerHTML = '<span class="me-2">🟢</span>' + el.innerText.substring(2); el.classList.add('text-success'); }
-            else { el.innerHTML = '<span class="me-2">🔴</span>' + el.innerText.substring(2); el.classList.remove('text-success'); }
+            const icon = el.querySelector("i"); // گرفتن آیکون
+            
+            if (passed) { 
+                icon.className = "bi bi-check-circle-fill ms-2 text-success"; // آیکون تیک
+                icon.style.fontSize = "1rem"; // سایز آیکون تیک
+                el.style.color = '#4ade80'; el.style.opacity = '1'; el.style.fontWeight = 'bold';
+            } else { 
+                icon.className = "bi bi-circle ms-2"; // آیکون دایره
+                icon.style.fontSize = "0.6rem"; // سایز آیکون دایره (ریزتر)
+                el.style.color = '#cbd5e1'; el.style.opacity = '0.8'; el.style.fontWeight = 'normal';
+            }
         }
     </script>
 </body>

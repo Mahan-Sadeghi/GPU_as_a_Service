@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
+from datetime import datetime
 
-# --- مدل‌های کاربر (User) ---
 class UserBase(BaseModel):
     username: str
 
@@ -10,36 +10,32 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: int
-    is_admin: bool  # <--- فیلد مهم جدید اینجاست
-    # role و quota_limit را حذف کردیم چون در دیتابیس نیستند
-
+    is_admin: bool
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-# --- مدل‌های تسک (Job) ---
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 class JobBase(BaseModel):
     gpu_type: str
     gpu_count: int
-    estimated_duration: int
     command: str
-    data_address: Optional[str] = "/data/default"
-    sensitivity: Optional[str] = "normal"
+    estimated_duration: int
 
 class JobCreate(JobBase):
     pass
 
 class JobResponse(JobBase):
     id: int
-    status: str
     owner_id: int
-
+    status: str
+    
+    # --- فیلدهای جدید زمان ---
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    
     class Config:
-        orm_mode = True
-
-# --- مدل توکن (برای لاگین) ---
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    username: Optional[str] = None
+        from_attributes = True

@@ -1,33 +1,30 @@
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from .database import Base
+from datetime import datetime
 
 class User(Base):
     __tablename__ = "users"
-
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    # --- این خط جا افتاده بود: ---
     is_admin = Column(Boolean, default=False)
-
-    # ارتباط با جدول تسک‌ها
+    
     jobs = relationship("Job", back_populates="owner")
 
 class Job(Base):
     __tablename__ = "jobs"
-
     id = Column(Integer, primary_key=True, index=True)
-    gpu_type = Column(String, index=True)
+    gpu_type = Column(String)
     gpu_count = Column(Integer)
+    command = Column(String)
     estimated_duration = Column(Integer)
     status = Column(String, default="PENDING")
     
-    # اطلاعات تکمیلی
-    command = Column(String)
-    data_address = Column(String)
-    sensitivity = Column(String)
-
-    # ارتباط با کاربر (مالک تسک)
+    # --- ستون‌های جدید زمان ---
+    created_at = Column(DateTime, default=datetime.now) # زمان ثبت
+    started_at = Column(DateTime, nullable=True)        # زمان شروع
+    completed_at = Column(DateTime, nullable=True)      # زمان پایان
+    
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="jobs")

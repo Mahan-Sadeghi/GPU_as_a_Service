@@ -1,48 +1,55 @@
 import time
 import sys
 import os
+from datetime import datetime
 
-# --- فیکس کردن مسیر برای پیدا کردن پوشه app ---
+# اضافه کردن مسیر پروژه برای شناسایی ماژول‌ها
 sys.path.append(os.getcwd())
-
 from app import models, database
 
 def process_jobs():
-    print("👷 Worker started! Waiting for APPROVED jobs...")
+    """
+    تابع اصلی ورکر (Worker)
+    این تابع به صورت مداوم دیتابیس را چک می‌کند تا کارهای تایید شده را انجام دهد.
+    """
+    print("👷 Worker started! Waiting for APPROVED jobs... (Press Ctrl+C to stop)")
     
     while True:
+        # اتصال به دیتابیس
         db = database.SessionLocal()
         try:
-            # فقط کارهایی که ادمین تایید کرده (APPROVED) رو پیدا کن
-            # نکته: ورکر به کارهای PENDING (زرد) کاری نداره!
+            # 1. پیدا کردن کارهایی که وضعیتشان APPROVED است
             job = db.query(models.Job).filter(models.Job.status == "APPROVED").first()
 
             if job:
-                print(f"⚡ Found job {job.id}: {job.command}")
+                print(f"⚡ Found job #{job.id}: {job.command}")
                 
-                # 1. تغییر وضعیت به آبی (در حال اجرا)
+                # 2. تغییر وضعیت به در حال اجرا (RUNNING)
                 job.status = "RUNNING"
+                job.started_at = datetime.now() # ثبت زمان شروع
                 db.commit()
-                print("   --> Status: RUNNING (Blue)")
+                print("   --> Status changed to: RUNNING")
                 
-                # شبیه‌سازی زمان اجرا
+                # 3. شبیه‌سازی پردازش (Wait)
                 duration = job.estimated_duration or 10
                 for i in range(duration):
-                    time.sleep(1)
-                    print(f"   ⏳ Processing... {i+1}/{duration}")
+                    time.sleep(1) # وقفه ۱ ثانیه‌ای
+                    print(f"   ⏳ Processing... {i+1}/{duration}s")
 
-                # 2. تغییر وضعیت به سبز (تمام شده)
+                # 4. اتمام کار و تغییر وضعیت به COMPLETED
                 job.status = "COMPLETED"
+                job.completed_at = datetime.now() # ثبت زمان پایان
                 db.commit()
-                print("   --> Status: COMPLETED (Green) ✅\n")
+                print("   --> Status changed to: COMPLETED ✅\n")
             
             else:
-                # استراحت کوتاه وقتی کاری نیست
+                # اگر کاری نبود، ۲ ثانیه صبر کن (برای کاهش فشار روی CPU)
                 time.sleep(2)
                 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error in worker: {e}")
         finally:
+            # بستن اتصال دیتابیس در هر دور حلقه
             db.close()
 
 if __name__ == "__main__":

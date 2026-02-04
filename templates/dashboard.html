@@ -6,6 +6,7 @@
     <title>داشبورد مدیریت GPU</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" rel="stylesheet">
     <link href="/static/styles.css" rel="stylesheet">
     <style>
         body { background-color: #0f172a !important; display: block !important; color: #f1f5f9; }
@@ -17,6 +18,9 @@
         .table { color: #e2e8f0 !important; margin-bottom: 0; }
         .table thead th { background-color: #0f172a !important; color: #94a3b8 !important; border-bottom: 2px solid #334155; text-align: center; vertical-align: middle;}
         .table tbody td { vertical-align: middle; border-bottom: 1px solid #334155; text-align: center; background-color: #1e293b; }
+        
+        .btn-charge { background-color: #10b981; color: white; border: none; padding: 2px 8px; border-radius: 5px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        .btn-charge:hover { background-color: #059669; transform: scale(1.1); }
     </style>
 </head>
 <body>
@@ -29,7 +33,6 @@
             
             <div class="d-flex align-items-center">
                 <span class="text-light ms-3 d-flex align-items-center gap-3" id="username-display"></span>
-                
                 <button onclick="logout()" class="btn btn-outline-danger btn-sm px-3 d-flex align-items-center">
                     <i class="bi bi-box-arrow-left ms-2"></i>خروج
                 </button>
@@ -38,41 +41,58 @@
     </nav>
 
     <div class="container">
-        <div class="card">
-            <div class="card-header d-flex align-items-center">
-                <i class="bi bi-rocket-takeoff-fill ms-2 fs-5"></i>
-                <span>ثبت درخواست جدید</span>
+        <div class="row">
+            <div class="col-lg-8 mb-3">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center">
+                        <i class="bi bi-rocket-takeoff-fill ms-2 fs-5"></i>
+                        <span>ثبت درخواست جدید</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="jobForm">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">نوع کارت گرافیک</label>
+                                    <select class="form-select" id="gpuType">
+                                        <option value="T4">NVIDIA T4</option>
+                                        <option value="V100">NVIDIA V100</option>
+                                        <option value="A100">NVIDIA A100</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">تعداد</label>
+                                    <input type="number" class="form-control" id="gpuCount" value="1" min="1" oninput="validity.valid||(value='1');">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">مدت (ثانیه)</label>
+                                    <input type="number" class="form-control" id="estimatedDuration" value="10" min="5" max="60">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">دستور</label>
+                                    <input type="text" class="form-control" id="command" required placeholder="مثلاً: python train.py">
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary w-100 fw-bold d-flex justify-content-center align-items-center">
+                                        <i class="bi bi-send-fill ms-2"></i>ارسال درخواست
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form id="jobForm">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-3">
-                            <label class="form-label">نوع کارت گرافیک</label>
-                            <select class="form-select" id="gpuType">
-                                <option value="T4">NVIDIA T4</option>
-                                <option value="V100">NVIDIA V100</option>
-                                <option value="A100">NVIDIA A100</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">تعداد</label>
-                            <input type="number" class="form-control" id="gpuCount" value="1" min="1" oninput="validity.valid||(value='1');">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">مدت (ثانیه)</label>
-                            <input type="number" class="form-control" id="estimatedDuration" value="10" min="5" max="60">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">دستور</label>
-                            <input type="text" class="form-control" id="command" required placeholder="مثلاً: python train.py">
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100 fw-bold d-flex justify-content-center align-items-center">
-                                <i class="bi bi-send-fill ms-2"></i>ارسال
-                            </button>
+
+            <div class="col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-header text-center">
+                        <i class="bi bi-pie-chart-fill ms-2"></i>وضعیت سهمیه
+                    </div>
+                    <div class="card-body d-flex justify-content-center align-items-center">
+                        <div style="width: 200px; height: 200px;">
+                            <canvas id="quotaChart"></canvas>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
 
@@ -108,10 +128,33 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const API_URL = ""; 
         let currentUser = null;
         let updateInterval = null;
+        let quotaChartInstance = null; // برای نگهداری نمودار
+
+        // تنظیمات خروج خودکار
+        const IDLE_TIMEOUT_MS = 15 * 60 * 1000; 
+        let idleTimer;
+
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                // پاپ‌آپ خروج خودکار
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'خروج امنیتی',
+                    text: 'به دلیل عدم فعالیت بیش از حد مجاز، از سیستم خارج شدید.',
+                    background: '#1e293b', color: '#fff',
+                    confirmButtonText: 'متوجه شدم'
+                }).then(() => logout());
+            }, IDLE_TIMEOUT_MS);
+        }
+
+        window.onload = window.onmousemove = window.onmousedown = window.onclick = window.onscroll = window.onkeypress = resetIdleTimer;
 
         async function checkLogin() {
             const token = localStorage.getItem("access_token");
@@ -122,29 +165,84 @@
                     currentUser = await res.json();
                     
                     let roleBadge = currentUser.is_admin ? 
-                        '<span class="badge bg-warning text-dark d-inline-flex align-items-center"><i class="bi bi-shield-lock-fill ms-1"></i>مدیر سیستم</span>' : 
-                        '<span class="badge bg-secondary d-inline-flex align-items-center"><i class="bi bi-person-fill ms-1"></i>کاربر عادی</span>';
+                        '<span class="badge bg-warning text-dark d-inline-flex align-items-center"><i class="bi bi-shield-lock-fill ms-1"></i>مدیر</span>' : 
+                        '<span class="badge bg-secondary d-inline-flex align-items-center"><i class="bi bi-person-fill ms-1"></i>کاربر</span>';
                     
-                    // 👇 استفاده از gap-3 در والد برای فاصله انداختن بین آیتم‌ها
+                    let quotaBadge = `<span class="badge bg-success d-inline-flex align-items-center" title="سهمیه باقی‌مانده">
+                                        <i class="bi bi-lightning-charge-fill ms-1"></i>${currentUser.quota}s
+                                        <button onclick="chargeQuota()" class="btn-charge ms-2" title="خرید شارژ">+</button>
+                                      </span>`;
+
                     document.getElementById("username-display").innerHTML = `
                         <i class="bi bi-person-circle fs-5"></i>
                         <span class="fw-bold">${currentUser.username}</span>
                         ${roleBadge}
+                        ${quotaBadge}
                     `;
                     
+                    // رسم نمودار بعد از لاگین
+                    renderChart();
+                    
                     loadJobs();
-                    updateInterval = setInterval(loadJobs, 3000);
+                    if (!updateInterval) updateInterval = setInterval(loadJobs, 3000);
                 } else logout();
-            } catch (error) { alert("خطای سرور"); }
+            } catch (error) { console.error(error); }
         }
 
-        function logout() { localStorage.removeItem("access_token"); clearInterval(updateInterval); window.location.href = "/"; }
+        // تابع رسم نمودار
+        function renderChart() {
+            if (!currentUser) return;
+            const ctx = document.getElementById('quotaChart').getContext('2d');
+            const maxQuota = currentUser.is_admin ? 1000 : 120; // فرض: 1000 برای ادمین، 120 برای کاربر
+            const remaining = currentUser.quota;
+            const used = maxQuota - remaining;
+
+            if (quotaChartInstance) quotaChartInstance.destroy();
+
+            quotaChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['مصرف شده', 'باقی‌مانده'],
+                    datasets: [{
+                        data: [used, remaining],
+                        backgroundColor: ['#ef4444', '#10b981'],
+                        borderColor: '#1e293b',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#fff', font: { family: 'system-ui' } } } }
+                }
+            });
+        }
+
+        async function chargeQuota() {
+            Swal.fire({
+                icon: 'info',
+                title: 'بخش پرداخت',
+                text: 'این قابلیت در فاز بعدی پروژه و پس از اتصال به درگاه بانکی فعال خواهد شد.\n(Simulation Mode Only)',
+                background: '#1e293b', color: '#fff',
+                confirmButtonText: 'باشه'
+            });
+        }
+
+        function logout() { 
+            localStorage.removeItem("access_token"); 
+            clearInterval(updateInterval); 
+            clearTimeout(idleTimer); 
+            window.location.href = "/"; 
+        }
 
         document.getElementById("jobForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             const token = localStorage.getItem("access_token");
             const countVal = parseInt(document.getElementById("gpuCount").value);
-            if (countVal < 1) { alert("تعداد گرافیک باید حداقل ۱ باشد"); return; }
+            if (countVal < 1) { 
+                Swal.fire({ icon: 'warning', title: 'خطا', text: 'تعداد گرافیک باید حداقل ۱ باشد', background: '#1e293b', color: '#fff' }); 
+                return; 
+            }
 
             try {
                 const res = await fetch(`${API_URL}/jobs/`, {
@@ -157,9 +255,20 @@
                         estimated_duration: parseInt(document.getElementById("estimatedDuration").value)
                     })
                 });
-                if (res.ok) { document.getElementById("jobForm").reset(); loadJobs(); }
-                else { const err = await res.json(); alert(`❌ خطا: ${err.detail}`); }
-            } catch (e) { alert("خطا"); }
+                if (res.ok) { 
+                    Swal.fire({
+                        icon: 'success', title: 'ثبت شد!', text: 'درخواست شما در صف پردازش قرار گرفت.',
+                        background: '#1e293b', color: '#fff', timer: 2000, showConfirmButton: false
+                    });
+                    document.getElementById("jobForm").reset(); 
+                    loadJobs(); 
+                    checkLogin(); // آپدیت سهمیه و نمودار
+                }
+                else { 
+                    const err = await res.json(); 
+                    Swal.fire({ icon: 'error', title: 'خطا', text: err.detail, background: '#1e293b', color: '#fff' });
+                }
+            } catch (e) { Swal.fire({ icon: 'error', title: 'خطا', text: 'خطای سرور', background: '#1e293b', color: '#fff' }); }
         });
 
         function formatTime(isoString) {
@@ -170,42 +279,48 @@
         async function loadJobs() {
             const token = localStorage.getItem("access_token");
             const tbody = document.querySelector("#jobsTable tbody");
+            
             try {
                 const res = await fetch(`${API_URL}/jobs/`, { headers: { "Authorization": `Bearer ${token}` } });
                 if (res.ok) {
                     const jobs = await res.json();
-                    tbody.innerHTML = "";
-                    if (jobs.length === 0) { tbody.innerHTML = "<tr><td colspan='7' class='text-center p-4 text-muted'>خالی</td></tr>"; return; }
+                    tbody.innerHTML = ""; 
+
+                    if (jobs.length === 0) { 
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="7" class="text-center py-5" style="color: #94a3b8;">
+                                    <i class="bi bi-inbox fs-1 d-block mb-3" style="opacity: 0.5;"></i>
+                                    <span>لیست پردازش‌ها خالی است.</span>
+                                    <br>
+                                    <small style="font-size: 0.8rem; opacity: 0.7;">برای شروع، یک درخواست جدید ثبت کنید.</small>
+                                </td>
+                            </tr>`;
+                        return; 
+                    }
 
                     jobs.forEach(job => {
-                        let statusContent = "";
-                        if (job.status === "PENDING") statusContent = `<span class="badge bg-warning text-dark d-inline-flex align-items-center"><i class="bi bi-hourglass-split ms-1"></i>در انتظار</span>`;
-                        else if (job.status === "APPROVED") statusContent = `<span class="badge bg-primary d-inline-flex align-items-center"><i class="bi bi-check2-circle ms-1"></i>تایید شد</span>`;
-                        else if (job.status === "RUNNING") statusContent = `<div class="text-info small d-inline-flex align-items-center"><i class="bi bi-cpu ms-1"></i>در حال اجرا...</div><div class="progress" style="height:4px; margin-top:2px"><div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width: 100%"></div></div>`;
-                        else if (job.status === "COMPLETED") statusContent = `<span class="badge bg-success d-inline-flex align-items-center"><i class="bi bi-check-circle-fill ms-1"></i>پایان</span>`;
-                        else if (job.status === "FAILED") statusContent = `<span class="badge bg-danger d-inline-flex align-items-center"><i class="bi bi-x-circle-fill ms-1"></i>رد شد</span>`;
-
-                        let timeDisplay = `<div style="font-size:0.75rem; color:#94a3b8">ثبت: ${formatTime(job.created_at)}</div>`;
-                        if (job.completed_at) timeDisplay += `<div style="font-size:0.75rem; color:#4ade80">پایان: ${formatTime(job.completed_at)}</div>`;
+                        let st = job.status;
+                        if(st==="PENDING") st=`<span class="badge bg-warning text-dark">در انتظار</span>`;
+                        else if(st==="APPROVED") st=`<span class="badge bg-primary">تایید شد</span>`;
+                        else if(st==="RUNNING") st=`<div class="text-info small">در حال اجرا... <div class="spinner-border spinner-border-sm ms-1"></div></div>`;
+                        else if(st==="COMPLETED") st=`<span class="badge bg-success">پایان</span>`;
+                        else if(st==="FAILED") st=`<span class="badge bg-danger">رد شد</span>`;
 
                         let btns = `<button onclick="deleteJob(${job.id})" class="btn btn-sm btn-outline-danger" title="حذف"><i class="bi bi-trash3-fill"></i></button>`;
                         
                         if (currentUser && currentUser.is_admin && job.status === "PENDING") {
-                            btns += ` <button onclick="updateStatus(${job.id}, 'APPROVED')" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i></button>
-                                      <button onclick="updateStatus(${job.id}, 'FAILED')" class="btn btn-sm btn-danger"><i class="bi bi-x-lg"></i></button>`;
+                            btns += ` <button onclick="updateStatus(${job.id}, 'APPROVED')" class="btn btn-sm btn-success ms-1"><i class="bi bi-check-lg"></i></button>
+                                      <button onclick="updateStatus(${job.id}, 'FAILED')" class="btn btn-sm btn-danger ms-1"><i class="bi bi-x-lg"></i></button>`;
                         }
 
                         tbody.innerHTML += `<tr>
                             <td>${job.id}</td>
                             <td>${job.owner_id}</td>
-                            <td>
-                                <span class="badge bg-dark border border-secondary d-inline-flex align-items-center" style="font-family:monospace">
-                                    <i class="bi bi-gpu-card ms-2"></i>${job.gpu_count} × ${job.gpu_type}
-                                </span>
-                            </td>
-                            <td>${timeDisplay}</td>
+                            <td><span class="badge bg-dark border border-secondary" style="font-family:monospace">${job.gpu_count} × ${job.gpu_type}</span></td>
+                            <td><div class="small text-muted">ثبت: ${formatTime(job.created_at)}</div><div class="small text-success">${job.completed_at ? 'پایان: '+formatTime(job.completed_at) : ''}</div></td>
                             <td><code>${job.command}</code></td>
-                            <td>${statusContent}</td>
+                            <td>${st}</td>
                             <td>${btns}</td>
                         </tr>`;
                     });
@@ -220,11 +335,27 @@
         }
 
         async function deleteJob(id) {
-            if(!confirm("آیا حذف شود؟")) return;
-            const t = localStorage.getItem("access_token");
-            await fetch(`${API_URL}/jobs/${id}`, { method: "DELETE", headers: {"Authorization": `Bearer ${t}`} });
-            loadJobs();
+            Swal.fire({
+                title: 'آیا حذف شود؟',
+                text: "این عملیات غیرقابل بازگشت است!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#334155',
+                confirmButtonText: 'بله، حذف کن',
+                cancelButtonText: 'لغو',
+                background: '#1e293b', color: '#fff'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const t = localStorage.getItem("access_token");
+                    await fetch(`${API_URL}/jobs/${id}`, { method: "DELETE", headers: {"Authorization": `Bearer ${t}`} });
+                    checkLogin(); // برای آپدیت سهمیه
+                    loadJobs();
+                    Swal.fire({ title: 'حذف شد!', icon: 'success', background: '#1e293b', color: '#fff', timer: 1500, showConfirmButton: false });
+                }
+            });
         }
+        
         checkLogin();
     </script>
 </body>

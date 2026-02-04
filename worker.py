@@ -2,54 +2,58 @@ import time
 import sys
 import os
 from datetime import datetime
+from sqlalchemy.orm import Session
 
-# اضافه کردن مسیر پروژه برای شناسایی ماژول‌ها
+# افزودن مسیر پروژه به sys.path برای شناسایی ماژول‌ها
 sys.path.append(os.getcwd())
 from app import models, database
 
-def process_jobs():
+def process_jobs() -> None:
     """
-    تابع اصلی ورکر (Worker)
-    این تابع به صورت مداوم دیتابیس را چک می‌کند تا کارهای تایید شده را انجام دهد.
+    تابع اصلی ورکر (Worker Process).
+    
+    وظایف:
+    1. بررسی دیتابیس برای تسک‌های 'APPROVED'.
+    2. تغییر وضعیت به 'RUNNING'.
+    3. شبیه‌سازی پردازش (Sleep).
+    4. تغییر وضعیت به 'COMPLETED' پس از پایان.
     """
     print("👷 Worker started! Waiting for APPROVED jobs... (Press Ctrl+C to stop)")
     
     while True:
-        # اتصال به دیتابیس
-        db = database.SessionLocal()
+        db: Session = database.SessionLocal()
         try:
-            # 1. پیدا کردن کارهایی که وضعیتشان APPROVED است
+            # جستجو برای اولین تسک تایید شده
             job = db.query(models.Job).filter(models.Job.status == "APPROVED").first()
 
             if job:
-                print(f"⚡ Found job #{job.id}: {job.command}")
+                print(f"⚡ Processing Job #{job.id}: {job.command}")
                 
-                # 2. تغییر وضعیت به در حال اجرا (RUNNING)
+                # شروع پردازش
                 job.status = "RUNNING"
-                job.started_at = datetime.now() # ثبت زمان شروع
+                job.started_at = datetime.now()
                 db.commit()
-                print("   --> Status changed to: RUNNING")
                 
-                # 3. شبیه‌سازی پردازش (Wait)
+                # شبیه‌سازی زمان اجرا
                 duration = job.estimated_duration or 10
                 for i in range(duration):
-                    time.sleep(1) # وقفه ۱ ثانیه‌ای
-                    print(f"   ⏳ Processing... {i+1}/{duration}s")
+                    # اینجا می‌توان لاگ‌های لحظه‌ای را به دیتابیس فرستاد
+                    time.sleep(1)
+                    # print(f"   ⏳ Step {i+1}/{duration}...") 
 
-                # 4. اتمام کار و تغییر وضعیت به COMPLETED
+                # پایان پردازش
                 job.status = "COMPLETED"
-                job.completed_at = datetime.now() # ثبت زمان پایان
+                job.completed_at = datetime.now()
                 db.commit()
-                print("   --> Status changed to: COMPLETED ✅\n")
+                print(f"✅ Job #{job.id} Completed successfully.\n")
             
             else:
-                # اگر کاری نبود، ۲ ثانیه صبر کن (برای کاهش فشار روی CPU)
+                # اگر تسکی نبود، وقفه کوتاه برای کاهش بار CPU
                 time.sleep(2)
                 
         except Exception as e:
-            print(f"❌ Error in worker: {e}")
+            print(f"❌ Worker Error: {e}")
         finally:
-            # بستن اتصال دیتابیس در هر دور حلقه
             db.close()
 
 if __name__ == "__main__":

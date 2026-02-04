@@ -34,7 +34,7 @@ classDiagram
         +start_processing()
     }
 
-    User "1" --> "*" Job : Owns
+    User "1" --> "*" Job : Owns (یک به چند)
     
 ```
 

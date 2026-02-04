@@ -34,7 +34,8 @@ classDiagram
         +start_processing()
     }
 
-    User "1" --> "*" Job : Owns (یک به چند)
+    User "1" --> "*" Job : Owns
+    
 
 🧩 تشریح مدل‌های داده
 

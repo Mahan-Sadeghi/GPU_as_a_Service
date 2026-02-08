@@ -21,7 +21,7 @@ graph TD
     Worker["Background Worker (worker.py)"] -->|Poll APPROVED Jobs| DB
     Worker -->|Update Status| DB
 ```
-نمودار کلاس‌ها (Class Diagram)
+## 2. نمودار کلاس‌ها (Class Diagram)
 ساختار دیتابیس بر اساس روابط بین کاربران و درخواست‌ها طراحی شده است.
 
 ```mermaid

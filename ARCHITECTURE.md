@@ -16,9 +16,9 @@
 
 ```mermaid
 graph TD
-    Client[Client / Browser] -->|HTTP Request| API[FastAPI Server (main.py)]
-    API -->|Read/Write| DB[(SQLite Database)]
-    Worker[Background Worker (worker.py)] -->|Poll APPROVED Jobs| DB
+    Client["Client / Browser"] -->|HTTP Request| API["FastAPI Server (main.py)"]
+    API -->|Read/Write| DB[("SQLite Database")]
+    Worker["Background Worker (worker.py)"] -->|Poll APPROVED Jobs| DB
     Worker -->|Update Status| DB
 ```
 نمودار کلاس‌ها (Class Diagram)

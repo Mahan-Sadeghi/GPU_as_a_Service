@@ -1,26 +1,32 @@
 """
-ماژول تنظیمات دیتابیس (Database Configuration).
-
-این فایل وظیفه برقراری اتصال به SQLite و ایجاد نشست‌ها (Sessions) را بر عهده دارد.
+ماژول پیکربندی دیتابیس (Database Configuration)
+---------------------------------------------
+وظیفه: برقراری اتصال به دیتابیس SQLite و مدیریت نشست‌ها (Sessions).
 """
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# آدرس فایل دیتابیس (SQLite)
-# در دایرکتوری اصلی پروژه فایلی به نام gpu_service.db ساخته می‌شود
+# مسیر فایل دیتابیس (Connection String)
+# فایل gpu_service.db در پوشه اصلی پروژه ساخته خواهد شد.
 SQLALCHEMY_DATABASE_URL = "sqlite:///./gpu_service.db"
 
-# ایجاد موتور اتصال به دیتابیس
-# check_same_thread=False برای SQLite ضروری است تا بتواند در چندین ترد (Thread) کار کند
+# 1. ساخت موتور دیتابیس (Engine)
+# آرگومان check_same_thread=False مخصوص SQLite است.
+# چون SQLite به صورت پیش‌فرض اجازه نمی‌دهد یک ترد (Thread) متفاوت به کانکشن دسترسی داشته باشد،
+# اما در FastAPI هر درخواست ممکن است در یک ترد جداگانه اجرا شود.
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
 
-# کلاس سازنده نشست (Session) برای تعامل با دیتابیس
+# 2. ساخت کلاس SessionLocal
+# این کلاس کارخانه (Factory) تولید نشست‌های دیتابیس است.
+# autocommit=False: تغییرات تا زمانی که commit نکنیم اعمال نمی‌شوند (برای امنیت تراکنش).
+# autoflush=False: تغییرات تا زمان commit به دیتابیس ارسال نمی‌شوند.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# کلاس پایه برای مدل‌ها (Models)
-# تمام جداول دیتابیس از این کلاس ارث‌بری می‌کنند
+# 3. کلاس پایه مدل‌ها (Base)
+# تمام کلاس‌های موجود در models.py باید از این کلاس ارث‌بری کنند
+# تا SQLAlchemy بتواند آن‌ها را شناسایی و تبدیل به جدول کند.
 Base = declarative_base()

@@ -1,57 +1,76 @@
+"""
+تست‌های مدیریت درخواست‌ها (Job Management Tests)
+-----------------------------------------------
+این فایل منطق اصلی سرویس GPU را تست می‌کند:
+1. ثبت درخواست و کسر سهمیه.
+2. جلوگیری از درخواست بیش از حد سهمیه.
+3. پروسه تایید درخواست توسط مدیر سیستم.
+"""
+
 from fastapi.testclient import TestClient
 
-# تست 1: ثبت درخواست جدید (باید سهمیه کم بشه)
 def test_create_job(client: TestClient):
-    # مرحله 1: ثبت‌نام و لاگین
+    """
+    تست ثبت درخواست جدید و بررسی کسر سهمیه.
+    """
+    # مرحله 1: ثبت‌نام و دریافت توکن
     client.post("/register", json={"username": "job_tester", "password": "123"})
     login_res = client.post("/token", data={"username": "job_tester", "password": "123"})
     token = login_res.json()["access_token"]
     
-    # مرحله 2: ارسال درخواست پردازش
+    # مرحله 2: ارسال درخواست پردازش (20 ثانیه)
     response = client.post(
         "/jobs/",
         json={
             "gpu_type": "T4",
             "gpu_count": 1,
             "command": "python main.py",
-            "estimated_duration": 20  # 20 ثانیه
+            "estimated_duration": 20
         },
-        # توکن رو باید توی هدر بفرستیم
+        # ارسال توکن در هدر Authorization
         headers={"Authorization": f"Bearer {token}"}
     )
     
     assert response.status_code == 200
     assert response.json()["status"] == "PENDING"
 
-    # مرحله 3: چک کنیم سهمیه کم شده؟ (120 - 20 = 100)
+    # مرحله 3: بررسی پروفایل کاربر برای اطمینان از کسر سهمیه
+    # سهمیه اولیه (120) - درخواست (20) = باید 100 باقی بماند
     user_res = client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
     assert user_res.json()["quota"] == 100
 
-# تست 2: اگه سهمیه نداشت ارور بده
 def test_insufficient_quota(client: TestClient):
-    # یوزر جدید
+    """
+    تست سناریوی کمبود سهمیه (Quota Limit).
+    اگر درخواست بیشتر از سهمیه باقی‌مانده باشد، باید رد شود.
+    """
+    # ایجاد کاربر جدید (سهمیه پیش‌فرض: 120)
     client.post("/register", json={"username": "poor_guy", "password": "123"})
     login_res = client.post("/token", data={"username": "poor_guy", "password": "123"})
     token = login_res.json()["access_token"]
     
-    # درخواستی که از سهمیه بیشتره (200 > 120)
+    # درخواست 200 ثانیه (که بیشتر از 120 است)
     response = client.post(
         "/jobs/",
         json={"gpu_type": "V100", "gpu_count": 1, "command": "run", "estimated_duration": 200},
         headers={"Authorization": f"Bearer {token}"}
     )
     
-    # باید ارور 400 بده
+    # انتظار خطای 400 داریم
     assert response.status_code == 400
     assert "سهمیه ناکافی" in response.json()["detail"]
 
-# تست 3: ادمین بتونه درخواست رو تایید کنه
 def test_admin_approve_job(client: TestClient):
-    # ساخت ادمین و گرفتن توکن ادمین
+    """
+    تست چرخه کامل تایید درخواست توسط ادمین.
+    """
+    # 1. ایجاد اکانت ادمین
     client.post("/register", json={"username": "admin", "password": "123"})
+    # فرض بر این است که در کد اصلی یا دیتابیس تست، اولین یوزر یا یوزر خاصی ادمین می‌شود
+    # یا اینکه در اینجا فقط لاجیک تغییر وضعیت را تست می‌کنیم.
     admin_token = client.post("/token", data={"username": "admin", "password": "123"}).json()["access_token"]
     
-    # ساخت کاربر عادی و ثبت یک جاب
+    # 2. ایجاد کاربر عادی و ثبت درخواست
     client.post("/register", json={"username": "user2", "password": "123"})
     user_token = client.post("/token", data={"username": "user2", "password": "123"}).json()["access_token"]
     
@@ -62,7 +81,7 @@ def test_admin_approve_job(client: TestClient):
     )
     job_id = job_res.json()["id"]
     
-    # ادمین وضعیت رو به APPROVED تغییر میده
+    # 3. تغییر وضعیت درخواست به APPROVED توسط ادمین
     update_res = client.put(
         f"/jobs/{job_id}?status_update=APPROVED",
         headers={"Authorization": f"Bearer {admin_token}"}

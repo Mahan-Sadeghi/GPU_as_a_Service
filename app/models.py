@@ -1,7 +1,8 @@
 """
-مدل‌های دیتابیس (Database Models).
-
-این فایل ساختار جداول (Users, Jobs) را برای SQLAlchemy تعریف می‌کند.
+مدل‌های داده (Database Models)
+-----------------------------
+تعریف ساختار جداول دیتابیس با استفاده از SQLAlchemy ORM.
+شامل جداول کاربران (User) و درخواست‌ها (Job).
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
@@ -11,53 +12,48 @@ from datetime import datetime
 
 class User(Base):
     """
-    جدول کاربران سیستم.
-    
-    Attributes:
-        id: شناسه یکتا.
-        username: نام کاربری (باید یکتا باشد).
-        hashed_password: رمز عبور هش شده.
-        is_admin: تعیین نقش کاربر (مدیر/کاربر عادی).
-        quota: میزان سهمیه باقی‌مانده کاربر به ثانیه.
+    جدول کاربران (Users Table)
+    -------------------------
+    اطلاعات احراز هویت و سهمیه کاربران در اینجا ذخیره می‌شود.
     """
     __tablename__ = "users"
     
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    is_admin = Column(Boolean, default=False)
-    quota = Column(Integer, default=120)  # سهمیه پیش‌فرض
+    # ستون‌های جدول
+    id = Column(Integer, primary_key=True, index=True)  # شناسه یکتا (Primary Key)
+    username = Column(String, unique=True, index=True)  # نام کاربری (باید یکتا باشد)
+    hashed_password = Column(String)                    # رمز عبور (به صورت هش شده ذخیره می‌شود)
+    is_admin = Column(Boolean, default=False)           # تعیین سطح دسترسی (ادمین یا کاربر عادی)
+    quota = Column(Integer, default=120)                # سهمیه پردازش (پیش‌فرض ۱۲۰ ثانیه)
     
-    # ارتباط با جدول Jobs (یک کاربر می‌تواند چندین جاب داشته باشد)
+    # ارتباط با جدول Job (One-to-Many Relationship)
+    # هر کاربر می‌تواند چندین درخواست (Job) داشته باشد.
     jobs = relationship("Job", back_populates="owner")
 
 class Job(Base):
     """
-    جدول درخواست‌های پردازشی (Jobs).
-    
-    Attributes:
-        id: شناسه یکتا.
-        gpu_type: نوع کارت گرافیک درخواستی.
-        gpu_count: تعداد کارت گرافیک.
-        command: دستور اجرایی.
-        status: وضعیت فعلی (PENDING, APPROVED, RUNNING, COMPLETED, FAILED).
-        created_at: زمان ثبت درخواست.
-        started_at: زمان شروع اجرا (توسط ورکر).
-        completed_at: زمان پایان اجرا.
+    جدول درخواست‌های پردازش (Jobs Table)
+    -----------------------------------
+    هر رکورد نشان‌دهنده یک درخواست برای استفاده از GPU است.
     """
     __tablename__ = "jobs"
     
+    # مشخصات درخواست
     id = Column(Integer, primary_key=True, index=True)
-    gpu_type = Column(String)
-    gpu_count = Column(Integer)
-    command = Column(String)
-    estimated_duration = Column(Integer)
+    gpu_type = Column(String)          # نوع کارت گرافیک (مثلاً T4, V100)
+    gpu_count = Column(Integer)        # تعداد کارت درخواستی
+    command = Column(String)           # دستور اجرایی کاربر (مثلاً python train.py)
+    estimated_duration = Column(Integer) # مدت تخمینی اجرا (ثانیه)
+    
+    # وضعیت درخواست (PENDING, RUNNING, COMPLETED, FAILED)
     status = Column(String, default="PENDING")
     
-    created_at = Column(DateTime, default=datetime.now)
-    started_at = Column(DateTime, nullable=True)
-    completed_at = Column(DateTime, nullable=True)
+    # زمان‌بندی‌ها
+    created_at = Column(DateTime, default=datetime.now) # زمان ثبت
+    started_at = Column(DateTime, nullable=True)        # زمان شروع اجرا
+    completed_at = Column(DateTime, nullable=True)      # زمان پایان
     
-    # کلید خارجی به جدول Users
+    # کلید خارجی (Foreign Key) برای ارتباط با کاربر
     owner_id = Column(Integer, ForeignKey("users.id"))
+    
+    # ارتباط معکوس با User
     owner = relationship("User", back_populates="jobs")

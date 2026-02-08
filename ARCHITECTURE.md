@@ -11,31 +11,42 @@
 
 ---
 
-## 📊 نمودار کلاس‌ها (UML Class Diagram)
-در نمودار زیر، ساختار دیتابیس و ارتباط بین کاربر (`User`) و درخواست‌ها (`Job`) نمایش داده شده است:
+## 1. نمودار اجزاء (Component Diagram)
+این سیستم از سه بخش اصلی تشکیل شده است که طبق خواسته پروژه، بخش پردازش (Worker) از بخش اصلی (API) جدا شده است.
 
 ```mermaid
-classDiagram
+graph TD
+    Client[Client / Browser] -->|HTTP Request| API[FastAPI Server (main.py)]
+    API -->|Read/Write| DB[(SQLite Database)]
+    Worker[Background Worker (worker.py)] -->|Poll APPROVED Jobs| DB
+    Worker -->|Update Status| DB
+```
+نمودار کلاس‌ها (Class Diagram)
+ساختار دیتابیس بر اساس روابط بین کاربران و درخواست‌ها طراحی شده است.
+
+```mermaid
+    classDiagram
     class User {
-        +Integer id
-        +String username
-        +String hashed_password
-        +Boolean is_admin
-        +Integer quota
-        +create_job()
+        +int id
+        +string username
+        +string hashed_password
+        +bool is_admin
+        +int quota
+        +list jobs
     }
 
     class Job {
-        +Integer id
-        +Integer owner_id
-        +String gpu_type
-        +String status
-        +DateTime created_at
-        +start_processing()
+        +int id
+        +string gpu_type
+        +int gpu_count
+        +string command
+        +string status
+        +int estimated_duration
+        +datetime created_at
+        +int owner_id
     }
 
-    User "1" --> "*" Job : Owns (یک به چند)
-    
+    User "1" --> "*" Job : owns
 ```
 
 🧩 تشریح مدل‌های داده
